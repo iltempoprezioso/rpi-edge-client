@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Configuration (contains secrets)
+config/config.json
+config/mqtt.json
+config/sensors.json
+*.key
+*.crt
+*.pem
+
+# Data files
+data/
+logs/
+*.db
+*.db-journal
+*.log
+
+# Backups
+backups/
+*.backup
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Raspberry Pi specific
+*.img
+*.img.gz

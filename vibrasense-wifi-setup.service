@@ -1,0 +1,20 @@
+[Unit]
+Description=VibraSense WiFi Setup Service
+After=network-pre.target
+Before=network.target
+Wants=network-pre.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/pi/rpi-edge-client
+ExecStart=/home/pi/rpi-edge-client/venv/bin/python3 /home/pi/rpi-edge-client/scripts/wifi_setup.py
+Restart=no
+StandardOutput=journal
+StandardError=journal
+
+# Only run if WiFi is not configured
+ConditionPathExists=!/home/pi/rpi-edge-client/.wifi_configured
+
+[Install]
+WantedBy=multi-user.target

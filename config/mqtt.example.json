@@ -1,0 +1,44 @@
+{
+  "broker": {
+    "host": "test.mosquitto.org",
+    "port": 8883,
+    "use_tls": true,
+    "protocol": "mqttv311"
+  },
+  "credentials": {
+    "username": "machine_001",
+    "password": "CHANGE_ME_SECRET_TOKEN"
+  },
+  "tls": {
+    "ca_cert": "/etc/vibrasense/ca.crt",
+    "client_cert": "/etc/vibrasense/client.crt",
+    "client_key": "/etc/vibrasense/client.key",
+    "insecure": false
+  },
+  "topics": {
+    "readings": "vibrasense/{company_id}/machine/{machine_id}/readings",
+    "status": "vibrasense/{company_id}/machine/{machine_id}/status",
+    "heartbeat": "vibrasense/{company_id}/machine/{machine_id}/heartbeat",
+    "commands": "vibrasense/{company_id}/machine/{machine_id}/commands",
+    "responses": "vibrasense/{company_id}/machine/{machine_id}/responses"
+  },
+  "qos": {
+    "readings": 1,
+    "status": 1,
+    "heartbeat": 0,
+    "commands": 1,
+    "responses": 1
+  },
+  "retain": {
+    "readings": false,
+    "status": true,
+    "heartbeat": false,
+    "commands": false,
+    "responses": false
+  },
+  "connection": {
+    "keepalive": 60,
+    "reconnect_delay": 5,
+    "max_reconnect_delay": 300
+  }
+}

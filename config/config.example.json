@@ -1,0 +1,40 @@
+{
+  "device": {
+    "device_id": "rpi-001",
+    "machine_id": 1,
+    "company_id": 1,
+    "machine_name": "CNC 1 - Centro Lavoro Verticale",
+    "location": "Reparto Produzione A"
+  },
+  "acquisition": {
+    "read_interval": 600,
+    "enabled": true,
+    "auto_start": true,
+    "max_retry_on_error": 5
+  },
+  "buffer": {
+    "database_path": "/home/pi/rpi-edge-client/data/buffer.db",
+    "max_records": 70000,
+    "cleanup_days": 7,
+    "retry_interval": 300
+  },
+  "watchdog": {
+    "enabled": true,
+    "heartbeat_interval": 60,
+    "network_check_interval": 300,
+    "auto_recovery": true
+  },
+  "logging": {
+    "level": "INFO",
+    "log_file": "/home/pi/rpi-edge-client/logs/vibrasense.log",
+    "max_bytes": 10485760,
+    "backup_count": 5
+  },
+  "update": {
+    "enabled": true,
+    "auto_backup": true,
+    "smoke_test": true,
+    "rollback_on_fail": true,
+    "git_repository": "/home/pi/rpi-edge-client"
+  }
+}

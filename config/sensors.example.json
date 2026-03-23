@@ -1,0 +1,85 @@
+{
+  "machine_id": 1,
+  "machine_name": "CNC 1 - Centro Lavoro Verticale",
+  "company_id": 1,
+  "sensors": [
+    {
+      "sensor_id": 1,
+      "name": "Vibrazioni Mandrino",
+      "type": "vibration",
+      "driver": "adxl345",
+      "interface": "i2c",
+      "enabled": true,
+      "config": {
+        "address": "0x53",
+        "bus": 1,
+        "range": 16,
+        "sampling_rate": 1600,
+        "axes": ["x", "y", "z"]
+      },
+      "processing": {
+        "filters": ["highpass_1hz", "lowpass_500hz", "notch_50hz"],
+        "calculations": ["rms", "peak_to_peak"],
+        "output_unit": "mm/s"
+      },
+      "thresholds": {
+        "warning": 4.5,
+        "critical": 7.1
+      }
+    },
+    {
+      "sensor_id": 2,
+      "name": "Temperatura Mandrino Anteriore",
+      "type": "temperature",
+      "driver": "max31855",
+      "interface": "spi",
+      "enabled": true,
+      "config": {
+        "cs_pin": 8,
+        "spi_bus": 0,
+        "spi_device": 0,
+        "thermocouple_type": "K"
+      },
+      "processing": {
+        "filters": [],
+        "calculations": ["average"],
+        "output_unit": "celsius"
+      },
+      "thresholds": {
+        "warning": 80,
+        "critical": 100
+      }
+    },
+    {
+      "sensor_id": 3,
+      "name": "Corrente Motore Mandrino",
+      "type": "current",
+      "driver": "acs712",
+      "interface": "adc",
+      "enabled": true,
+      "config": {
+        "adc_driver": "mcp3008",
+        "adc_channel": 0,
+        "spi_bus": 0,
+        "spi_device": 1,
+        "sensor_range": 30,
+        "calibration_offset": 2.5,
+        "reference_voltage": 3.3
+      },
+      "processing": {
+        "filters": [],
+        "calculations": ["rms"],
+        "output_unit": "ampere"
+      },
+      "thresholds": {
+        "warning": 25,
+        "critical": 28
+      }
+    }
+  ],
+  "acquisition": {
+    "read_interval": 600,
+    "samples_per_read": 100,
+    "enabled": true
+  }
+}
