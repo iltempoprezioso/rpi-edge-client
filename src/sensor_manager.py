@@ -233,7 +233,7 @@ class SensorManager:
     
     def get_read_interval(self) -> int:
         """Get configured read interval in seconds."""
-        return self.acquisition_config.get('read_interval', 600)
+        return self.acquisition_config.get('read_interval', 30)
     
     def is_acquisition_enabled(self) -> bool:
         """Check if data acquisition is enabled."""

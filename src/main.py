@@ -79,15 +79,24 @@ class VibraSenseEdgeClient:
     def _load_config(self) -> dict:
         """Load main configuration."""
         config_file = self.config_dir / 'config.json'
+        config_example = self.config_dir / 'config.example.json'
+        
+        # Try main config first, fallback to example
+        if config_file.exists():
+            config_path = config_file
+        elif config_example.exists():
+            config_path = config_example
+            self.logger.warning(f"config.json not found, using {config_example}")
+            self.logger.warning("⚠️  IMPORTANT: Copy config.example.json to config.json and configure device_id, company_id")
+        else:
+            self.logger.error(f"No configuration file found: tried {config_file} and {config_example}")
+            sys.exit(1)
         
         try:
-            with open(config_file, 'r') as f:
+            with open(config_path, 'r') as f:
                 config = json.load(f)
-            self.logger.info(f"Configuration loaded from {config_file}")
+            self.logger.info(f"Configuration loaded from {config_path}")
             return config
-        except FileNotFoundError:
-            self.logger.error(f"Configuration file not found: {config_file}")
-            sys.exit(1)
         except Exception as e:
             self.logger.error(f"Error loading configuration: {e}")
             sys.exit(1)
@@ -123,9 +132,22 @@ class VibraSenseEdgeClient:
             
             # 4. Initialize MQTT client
             mqtt_config = self.config_dir / 'mqtt.json'
+            mqtt_example = self.config_dir / 'mqtt.example.json'
+            
+            # Try main mqtt config first, fallback to example
+            if mqtt_config.exists():
+                mqtt_config_path = mqtt_config
+            elif mqtt_example.exists():
+                mqtt_config_path = mqtt_example
+                self.logger.warning(f"mqtt.json not found, using {mqtt_example}")
+                self.logger.warning("⚠️  IMPORTANT: Copy mqtt.example.json to mqtt.json and configure broker credentials")
+            else:
+                self.logger.error(f"No MQTT config found: tried {mqtt_config} and {mqtt_example}")
+                return False
+            
             device_config = self.config.get('device', {})
             self.mqtt_client = MQTTClient(
-                config_path=str(mqtt_config),
+                config_path=str(mqtt_config_path),
                 machine_id=device_config.get('machine_id', 1),
                 company_id=device_config.get('company_id', 1)
             )
