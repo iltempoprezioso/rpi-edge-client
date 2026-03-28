@@ -40,6 +40,15 @@ VibraSense Edge Client is a production-ready edge computing software for Raspber
 - ✅ First-time setup in 5 minutes via smartphone
 
 ### Supported Sensors
+
+**Production Hardware (Tested on UnitaPresidioMacchina001):**
+| Sensor | Type | Interface | Range | Notes |
+|--------|------|-----------|-------|-------|
+| ISM330DHCX | 6-axis IMU (accel+gyro) | I2C (0x6A) | ±4g, ±250dps | High-speed 6.66kHz for FFT |
+| MAX6675 | K-type thermocouple | SPI CE0 | 0-1024°C | 0.25°C resolution |
+| SCT-013-030 + ADS1115 | AC current (clamp) | I2C (0x48) | 0-30A | Non-invasive, RMS calc |
+
+**Legacy/Alternative Sensors (drivers available):**
 | Sensor | Type | Interface | Range |
 |--------|------|-----------|-------|
 | ADXL345 | 3-axis accelerometer | I2C | ±16g |

@@ -7,7 +7,7 @@
     "location": "Reparto Produzione A"
   },
   "acquisition": {
-    "read_interval": 600,
+    "read_interval": 30,
     "enabled": true,
     "auto_start": true,
     "max_retry_on_error": 5

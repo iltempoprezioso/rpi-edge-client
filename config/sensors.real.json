@@ -1,0 +1,108 @@
+{
+  "machine_id": 1,
+  "machine_name": "UnitaPresidioMacchina001",
+  "location": "Production Floor",
+  "sensors": [
+    {
+      "sensor_id": 1,
+      "name": "Vibrazioni 6-Assi",
+      "type": "vibration",
+      "driver": "ism330dhcx",
+      "enabled": true,
+      "config": {
+        "address": "0x6A",
+        "bus": 1,
+        "accel_range": 4,
+        "gyro_range": 250,
+        "sampling_rate": 104,
+        "enable_gyro": true
+      },
+      "processing": {
+        "filters": {
+          "highpass": 1.0,
+          "lowpass": 500.0,
+          "notch": 50.0
+        },
+        "calculate": ["rms", "peak", "peak_to_peak"],
+        "fft_enabled": true,
+        "fft_samples": 4096,
+        "fft_sampling_rate": 6660
+      },
+      "thresholds": {
+        "warning": {
+          "accel_rms": 2.0,
+          "gyro_rms": 50.0
+        },
+        "critical": {
+          "accel_rms": 5.0,
+          "gyro_rms": 100.0
+        }
+      },
+      "notes": "Adafruit ISM330DHCX - High-precision 6-axis IMU. For FFT analysis, burst mode at 6.66kHz. Gyroscope provides additional rotational data for advanced diagnostics."
+    },
+    {
+      "sensor_id": 2,
+      "name": "Temperatura Cuscinetto",
+      "type": "temperature",
+      "driver": "max6675",
+      "enabled": true,
+      "config": {
+        "cs_pin": 0,
+        "bus": 0,
+        "max_speed_hz": 1000000
+      },
+      "processing": {
+        "calculate": ["average", "trend"]
+      },
+      "thresholds": {
+        "warning": {
+          "temperature": 70.0
+        },
+        "critical": {
+          "temperature": 90.0
+        }
+      },
+      "notes": "MAX6675 + K-type thermocouple on SPI0 CE0 (GPIO8). Resolution 0.25°C. Monitor bearing temperature."
+    },
+    {
+      "sensor_id": 3,
+      "name": "Corrente Motore Principale",
+      "type": "current",
+      "driver": "sct013_ads1115",
+      "enabled": true,
+      "config": {
+        "address": "0x48",
+        "bus": 1,
+        "channel": 0,
+        "gain": "4.096V",
+        "current_range": 30.0,
+        "bias_voltage": 1.65,
+        "calibration_offset": 0.0,
+        "samples_per_read": 100
+      },
+      "processing": {
+        "calculate": ["rms", "peak", "crest_factor", "power_estimate"],
+        "power_voltage": 230.0,
+        "power_factor": 0.95
+      },
+      "thresholds": {
+        "warning": {
+          "current_rms": 25.0,
+          "crest_factor": 2.5
+        },
+        "critical": {
+          "current_rms": 28.0,
+          "crest_factor": 3.0
+        }
+      },
+      "notes": "SCT-013-030 non-invasive clamp sensor + ADS1115 16-bit ADC. Measures AC RMS current. Bias circuit: 2x 10kΩ + 100µF for signal centering."
+    }
+  ],
+  "acquisition": {
+    "read_interval": 30,
+    "burst_interval": 300,
+    "burst_mode_enabled": true,
+    "burst_trigger": "timer"
+  },
+  "notes": "Production configuration for Raspberry Pi 4 Model B (UnitaPresidioMacchina001). All sensors tested and calibrated. smbus2 and spidev libraries required."
+}

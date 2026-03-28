@@ -22,6 +22,8 @@ class SensorDriver(ABC):
         self.config = config
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.is_initialized = False
+        self.initialized = False  # Alias for compatibility
+        self.mock_mode = False
         self.error_count = 0
         
     @abstractmethod
@@ -45,9 +47,28 @@ class SensorDriver(ABC):
         pass
     
     @abstractmethod
-    def close(self):
-        """Close sensor connection and cleanup resources."""
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Get sensor status and health information.
+        
+        Returns:
+            Dictionary with status information
+        """
         pass
+    
+    @abstractmethod
+    def shutdown(self) -> bool:
+        """
+        Shutdown sensor and cleanup resources.
+        
+        Returns:
+            True if shutdown successful, False otherwise
+        """
+        pass
+    
+    def close(self):
+        """Close sensor connection (alias for shutdown)."""
+        return self.shutdown()
     
     def reset_error_count(self):
         """Reset the error counter."""

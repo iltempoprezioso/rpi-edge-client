@@ -6,10 +6,10 @@ scipy>=1.10.0,<2.0.0
 # Web server for WiFi setup
 flask>=3.0.0,<4.0.0
 
-# Raspberry Pi GPIO (only for real hardware)
-# RPi.GPIO>=0.7.1
-# spidev>=3.6
-# smbus2>=0.4.3
+# Raspberry Pi hardware interfaces (required for production)
+RPi.GPIO>=0.7.1
+spidev>=3.6
+smbus2>=0.4.3
 
 # Database
 # sqlite3 is built-in Python

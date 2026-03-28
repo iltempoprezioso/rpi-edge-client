@@ -20,7 +20,6 @@ build/
 # Configuration (contains secrets)
 config/config.json
 config/mqtt.json
-config/sensors.json
 *.key
 *.crt
 *.pem

@@ -1,14 +1,17 @@
 """
 Sensor drivers package for VibraSense Edge Client.
+Production drivers for UnitaPresidioMacchina001.
 """
 from .base_driver import SensorDriver
-from .adxl345 import ADXL345Driver
-from .max31855 import MAX31855Driver
-from .acs712 import ACS712Driver
+
+# Production drivers
+from .ism330dhcx import ISM330DHCXDriver
+from .max6675 import MAX6675Driver
+from .sct013_ads1115 import SCT013ADS1115Driver
 
 __all__ = [
     'SensorDriver',
-    'ADXL345Driver',
-    'MAX31855Driver',
-    'ACS712Driver'
+    'ISM330DHCXDriver',
+    'MAX6675Driver',
+    'SCT013ADS1115Driver'
 ]
