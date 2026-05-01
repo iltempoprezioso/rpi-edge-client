@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.sensor_manager import SensorManager
 from src.mqtt_client import MQTTClient
+from src.http_client import HTTPClient
 from src.buffer_manager import BufferManager
 from src.data_processor import DataProcessor
 from src.command_handler import CommandHandler
@@ -53,10 +54,12 @@ class VibraSenseEdgeClient:
         # Initialize components
         self.sensor_manager: Optional[SensorManager] = None
         self.mqtt_client: Optional[MQTTClient] = None
+        self.http_client: Optional[HTTPClient] = None
         self.buffer_manager: Optional[BufferManager] = None
         self.data_processor: Optional[DataProcessor] = None
         self.command_handler: Optional[CommandHandler] = None
         self.watchdog: Optional[Watchdog] = None
+        self.transmission_mode: str = 'http'  # 'http' or 'mqtt'
         
         self.is_running = False
         self.acquisition_enabled = True
@@ -135,7 +138,31 @@ class VibraSenseEdgeClient:
             # 3. Initialize data processor
             self.data_processor = DataProcessor(sampling_rate=1600)
             
-            # 4. Initialize MQTT client
+            # 4. Initialize transmission client (HTTP or MQTT)
+            transmission_config = self.config.get('transmission', {})
+            self.transmission_mode = transmission_config.get('mode', 'http')
+            
+            if self.transmission_mode == 'http':
+                # Initialize HTTP client
+                http_url = transmission_config.get('http_url', '')
+                if not http_url:
+                    self.logger.error("HTTP mode enabled but no http_url configured")
+                    return False
+                
+                device_config = self.config.get('device', {})
+                self.http_client = HTTPClient(
+                    base_url=http_url,
+                    machine_id=device_config.get('machine_id', 1),
+                    company_id=device_config.get('company_id', 1),
+                    device_id=device_config.get('device_id', 'rpi-001')
+                )
+                
+                if not self.http_client.connect():
+                    self.logger.warning("HTTP connection test failed, will retry during operation")
+                else:
+                    self.logger.info(f"✓ HTTP client connected: {http_url}")
+            
+            # 5. Initialize MQTT client (optional, for commands or fallback)
             mqtt_config = self.config_dir / 'mqtt.json'
             mqtt_example = self.config_dir / 'mqtt.example.json'
             
@@ -227,14 +254,25 @@ class VibraSenseEdgeClient:
                     # Save to buffer
                     self.buffer_manager.save_reading(readings)
                     
-                    # Try to transmit via MQTT
-                    if self.mqtt_client.is_connected:
-                        if self.mqtt_client.publish_readings(readings):
-                            self.logger.info(f"✓ Readings transmitted ({len(readings['readings'])} sensors)")
+                    # Try to transmit via configured method
+                    transmitted = False
+                    
+                    if self.transmission_mode == 'http' and self.http_client:
+                        if self.http_client.publish_readings(readings):
+                            transmitted = True
                         else:
-                            self.logger.warning("MQTT transmission failed, buffered locally")
-                    else:
-                        self.logger.warning("MQTT disconnected, buffered locally")
+                            self.logger.warning("HTTP transmission failed, buffered locally")
+                    elif self.transmission_mode == 'mqtt' and self.mqtt_client:
+                        if self.mqtt_client.is_connected:
+                            if self.mqtt_client.publish_readings(readings):
+                                transmitted = True
+                            else:
+                                self.logger.warning("MQTT transmission failed, buffered locally")
+                        else:
+                            self.logger.warning("MQTT disconnected, buffered locally")
+                    
+                    if transmitted:
+                        self.logger.info(f"✓ Readings transmitted ({len(readings['readings'])} sensors)")
                     
                     # Retry untransmitted readings
                     self._retry_buffered_readings()
@@ -261,7 +299,14 @@ class VibraSenseEdgeClient:
     def _retry_buffered_readings(self):
         """Retry transmitting buffered readings."""
         try:
-            if not self.mqtt_client.is_connected:
+            # Check if we have a connected client
+            can_transmit = False
+            if self.transmission_mode == 'http' and self.http_client:
+                can_transmit = True
+            elif self.transmission_mode == 'mqtt' and self.mqtt_client and self.mqtt_client.is_connected:
+                can_transmit = True
+            
+            if not can_transmit:
                 return
             
             # Get untransmitted readings
@@ -288,7 +333,13 @@ class VibraSenseEdgeClient:
             # Transmit grouped readings
             transmitted_ids = []
             for data in grouped.values():
-                if self.mqtt_client.publish_readings(data):
+                success = False
+                if self.transmission_mode == 'http' and self.http_client:
+                    success = self.http_client.publish_readings(data)
+                elif self.transmission_mode == 'mqtt' and self.mqtt_client:
+                    success = self.mqtt_client.publish_readings(data)
+                
+                if success:
                     transmitted_ids.extend([r['id'] for r in data['readings']])
             
             # Mark as transmitted

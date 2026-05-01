@@ -6,6 +6,12 @@
     "machine_name": "CNC 1 - Centro Lavoro Verticale",
     "location": "Reparto Produzione A"
   },
+  "transmission": {
+    "mode": "http",
+    "http_url": "https://3000-io7myyqug4gr4l7itchut-c81df28e.sandbox.novita.ai",
+    "http_timeout": 10,
+    "mqtt_enabled": false
+  },
   "acquisition": {
     "read_interval": 30,
     "enabled": true,
