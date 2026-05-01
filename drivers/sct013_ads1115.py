@@ -194,7 +194,7 @@ class SCT013ADS1115Driver(SensorDriver):
             try:
                 config_bytes = self.bus.read_i2c_block_data(self.i2c_address, self.REG_CONFIG, 2)
                 logger.info(f"Sensor {self.sensor_id}: ADS1115 detected at 0x{self.i2c_address:02x}")
-            except:
+            except (IOError, OSError) as e:
                 logger.error(f"Sensor {self.sensor_id}: ADS1115 not found at 0x{self.i2c_address:02x}")
                 return False
             
@@ -205,6 +205,9 @@ class SCT013ADS1115Driver(SensorDriver):
             logger.info(f"  - Samples per RMS: {self.samples_per_read}")
             
             self.initialized = True
+
+            
+            self.is_initialized = True  # Sync with base class
             return True
             
         except Exception as e:
@@ -392,6 +395,9 @@ class SCT013ADS1115Driver(SensorDriver):
                 logger.info(f"Sensor {self.sensor_id}: I2C closed")
             
             self.initialized = False
+
+            
+            self.is_initialized = False  # Sync with base class
             return True
             
         except Exception as e:

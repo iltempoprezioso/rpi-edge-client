@@ -8,7 +8,7 @@ import logging
 import json
 import time
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 # Add src directory to path
@@ -25,13 +25,18 @@ from src.watchdog import Watchdog
 class VibraSenseEdgeClient:
     """Main application class for VibraSense edge client."""
     
-    def __init__(self, config_dir: str = '/home/pi/rpi-edge-client/config'):
+    def __init__(self, config_dir: str = None):
         """
         Initialize edge client.
         
         Args:
-            config_dir: Directory containing configuration files
+            config_dir: Directory containing configuration files (auto-detected if None)
         """
+        # Auto-detect project root if config_dir not specified
+        if config_dir is None:
+            project_root = Path(__file__).parent.parent
+            config_dir = project_root / 'config'
+        
         self.config_dir = Path(config_dir)
         
         # Setup logging first
@@ -63,7 +68,7 @@ class VibraSenseEdgeClient:
     def _setup_logging(self):
         """Setup logging configuration."""
         # Create logs directory
-        log_dir = Path('/home/pi/rpi-edge-client/logs')
+        log_dir = Path(__file__).parent.parent / 'logs'
         log_dir.mkdir(parents=True, exist_ok=True)
         
         # Configure logging
@@ -342,7 +347,7 @@ class VibraSenseEdgeClient:
         """Send status update via MQTT."""
         try:
             status_data = {
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'event': event,
                 'acquisition_enabled': self.acquisition_enabled,
                 'sensors': self.sensor_manager.get_sensor_status(),

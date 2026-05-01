@@ -93,6 +93,9 @@ class MAX6675Driver(SensorDriver):
                 logger.info(f"Sensor {self.sensor_id}: Initial temperature: {temp:.2f}°C")
             
             self.initialized = True
+
+            
+            self.is_initialized = True  # Sync with base class
             return True
             
         except Exception as e:
@@ -250,6 +253,9 @@ class MAX6675Driver(SensorDriver):
                 logger.info(f"Sensor {self.sensor_id}: SPI closed")
             
             self.initialized = False
+
+            
+            self.is_initialized = False  # Sync with base class
             return True
             
         except Exception as e:

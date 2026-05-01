@@ -191,6 +191,9 @@ class ISM330DHCXDriver(SensorDriver):
             time.sleep(0.05)
             
             self.initialized = True
+
+            
+            self.is_initialized = True  # Sync with base class
             return True
             
         except Exception as e:
@@ -315,9 +318,11 @@ class ISM330DHCXDriver(SensorDriver):
             logger.warning("FIFO mode not available in mock mode")
             return []
         
+        # Save current ODR (BEFORE try block for finally access)
+        original_odr = self.sampling_rate
+        samples = []
+        
         try:
-            # Save current ODR
-            original_odr = self.sampling_rate
             
             # 1. Configure accelerometer for 6660 Hz
             odr_6660 = self.ODR_6660_HZ
@@ -387,18 +392,18 @@ class ISM330DHCXDriver(SensorDriver):
             
         except Exception as e:
             logger.error(f"Sensor {self.sensor_id}: FIFO burst failed: {e}")
-            
-            # Try to restore normal mode
+            return []
+        finally:
+            # CRITICAL: Always restore normal mode, even on error
             try:
                 odr_normal = self._get_odr_value(original_odr)
                 accel_reg_val, _ = self.accel_range_map[self.accel_range]
                 ctrl1_xl = odr_normal | (accel_reg_val << 2)
                 self.bus.write_byte_data(self.i2c_address, self.REG_CTRL1_XL, ctrl1_xl)
                 self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL4, 0x00)
-            except:
-                pass
-            
-            return []
+                logger.debug(f"Sensor {self.sensor_id}: Restored normal mode after FIFO burst")
+            except Exception as restore_error:
+                logger.error(f"Sensor {self.sensor_id}: Failed to restore sensor after FIFO burst: {restore_error}")
     
     def get_status(self) -> Dict:
         """Get sensor status"""
@@ -440,6 +445,9 @@ class ISM330DHCXDriver(SensorDriver):
                 logger.info(f"Sensor {self.sensor_id}: Shutdown complete")
             
             self.initialized = False
+
+            
+            self.is_initialized = False  # Sync with base class
             return True
             
         except Exception as e:
