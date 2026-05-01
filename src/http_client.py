@@ -127,9 +127,18 @@ class HTTPClient:
         Returns:
             Payload in cloud worker format
         """
-        # Convert Unix timestamp to ISO8601 UTC
-        timestamp_unix = readings_data.get('timestamp', datetime.now(timezone.utc).timestamp())
-        timestamp_iso = datetime.fromtimestamp(timestamp_unix, tz=timezone.utc).isoformat()
+        # Handle both Unix timestamp (float) and ISO8601 string formats
+        timestamp_raw = readings_data.get('timestamp', datetime.now(timezone.utc).timestamp())
+        
+        if isinstance(timestamp_raw, str):
+            # Already ISO8601 format (from buffer)
+            timestamp_iso = timestamp_raw
+        elif isinstance(timestamp_raw, (int, float)):
+            # Unix timestamp, convert to ISO8601
+            timestamp_iso = datetime.fromtimestamp(timestamp_raw, tz=timezone.utc).isoformat()
+        else:
+            # Fallback to current time
+            timestamp_iso = datetime.now(timezone.utc).isoformat()
         
         # Build readings array
         cloud_readings = []
