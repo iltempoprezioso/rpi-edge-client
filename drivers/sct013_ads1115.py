@@ -124,6 +124,16 @@ class SCT013ADS1115Driver(SensorDriver):
         self.bus_number = config.get('bus', 1)
         self.channel = config.get('channel', 0)
         
+        # Gain string to constant mapping (MUST be defined BEFORE _parse_gain call)
+        self.gain_str_map = {
+            '6.144V': self.PGA_6_144V,
+            '4.096V': self.PGA_4_096V,
+            '2.048V': self.PGA_2_048V,
+            '1.024V': self.PGA_1_024V,
+            '0.512V': self.PGA_0_512V,
+            '0.256V': self.PGA_0_256V,
+        }
+        
         # Parse gain (support both string "4.096V" and int 512/0x0200)
         gain_config = config.get('gain', '4.096V')
         self.gain = self._parse_gain(gain_config)
@@ -146,16 +156,6 @@ class SCT013ADS1115Driver(SensorDriver):
             1: self.MUX_AIN1_GND,
             2: self.MUX_AIN2_GND,
             3: self.MUX_AIN3_GND,
-        }
-        
-        # Gain string to constant mapping
-        self.gain_str_map = {
-            '6.144V': self.PGA_6_144V,
-            '4.096V': self.PGA_4_096V,
-            '2.048V': self.PGA_2_048V,
-            '1.024V': self.PGA_1_024V,
-            '0.512V': self.PGA_0_512V,
-            '0.256V': self.PGA_0_256V,
         }
     
     def _parse_gain(self, gain_config):

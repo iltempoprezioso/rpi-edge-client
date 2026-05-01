@@ -7,7 +7,7 @@ import time
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
-from drivers import ADXL345Driver, MAX31855Driver, ACS712Driver, SensorDriver
+from drivers import ISM330DHCXDriver, MAX6675Driver, SCT013ADS1115Driver, SensorDriver
 
 
 class SensorManager:
@@ -15,9 +15,9 @@ class SensorManager:
     
     # Map sensor driver names to classes
     DRIVER_MAP = {
-        'adxl345': ADXL345Driver,
-        'max31855': MAX31855Driver,
-        'acs712': ACS712Driver
+        'ism330dhcx': ISM330DHCXDriver,
+        'max6675': MAX6675Driver,
+        'sct013_ads1115': SCT013ADS1115Driver
     }
     
     def __init__(self, config_path: str):
