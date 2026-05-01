@@ -19,7 +19,7 @@
     "max_retry_on_error": 5
   },
   "buffer": {
-    "database_path": "/home/pi/rpi-edge-client/data/buffer.db",
+    "database_path": "data/buffer.db",
     "max_records": 70000,
     "cleanup_days": 7,
     "retry_interval": 300
@@ -32,7 +32,7 @@
   },
   "logging": {
     "level": "INFO",
-    "log_file": "/home/pi/rpi-edge-client/logs/vibrasense.log",
+    "log_file": "logs/vibrasense.log",
     "max_bytes": 10485760,
     "backup_count": 5
   },
@@ -41,6 +41,6 @@
     "auto_backup": true,
     "smoke_test": true,
     "rollback_on_fail": true,
-    "git_repository": "/home/pi/rpi-edge-client"
+    "git_repository": "."
   }
 }
