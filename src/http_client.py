@@ -151,13 +151,13 @@ class HTTPClient:
             if sensor_type == 'vibration':
                 # Vibration sensor: extract RMS for each axis
                 for axis in ['x', 'y', 'z']:
-                    accel_key = f'accel_{axis}'
-                    if accel_key in data:
+                    vel_key = f'vel_{axis}'
+                    if vel_key in data:
                         cloud_readings.append({
                             'sensor_id': sensor_id,
                             'type': 'vibration',
-                            'value_rms': data[accel_key],
-                            'unit': 'g',
+                            'value_rms': data[vel_key],
+                            'unit': 'mm/s',
                             'axis': axis
                         })
                 
