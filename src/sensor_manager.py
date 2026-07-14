@@ -32,7 +32,7 @@ class SensorManager:
         self.is_running = False
 
         self._load_configuration()
-        self._design_filters(6660.0)
+        self._design_filters(1660.0)
 
     def _load_configuration(self):
         """Load sensor configuration from JSON file."""
@@ -275,8 +275,8 @@ class SensorManager:
 
         return result
 
-    def _velocity_rms_mms(self, accel_g, fs: float = 6660.0,
-                          f_lo: float = 10.0, f_hi: float = 1000.0) -> float:
+    def _velocity_rms_mms(self, accel_g, fs: float = 1660.0,
+                          f_lo: float = 10.0, f_hi: float = 800.0) -> float:
         """Velocita RMS in mm/s: integrazione in frequenza band-limited (ISO 10816)."""
         import numpy as _np
         x = _np.asarray(accel_g, dtype=_np.float64) * 9.80665   # g -> m/s^2

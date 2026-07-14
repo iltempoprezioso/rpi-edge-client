@@ -325,24 +325,24 @@ class ISM330DHCXDriver(SensorDriver):
         try:
             
             # 1. Configure accelerometer for 6660 Hz
-            odr_6660 = self.ODR_6660_HZ
+            odr_6660 = self.ODR_1660_HZ   # burst @1660 Hz: drenabile senza overflow
             accel_reg_val, _ = self.accel_range_map[self.accel_range]
             ctrl1_xl = odr_6660 | (accel_reg_val << 2)
             self.bus.write_byte_data(self.i2c_address, self.REG_CTRL1_XL, ctrl1_xl)
             
-            logger.info(f"Sensor {self.sensor_id}: Starting FIFO burst mode at 6660 Hz for {num_samples} samples")
+            logger.info(f"Sensor {self.sensor_id}: Starting FIFO burst mode at 1660 Hz for {num_samples} samples")
             
             # 2. Configure FIFO: continuous mode, accelerometer only
             self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL1, 0x00)  # Watermark low
             self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL2, 0x00)  # Watermark high
-            self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL3, 0xA0)  # BDR accel = 6660 Hz
+            self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL3, 0x08)  # BDR accel = 1660 Hz
             self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL4, 0x06)  # Continuous mode
             
             time.sleep(0.01)  # Let FIFO start filling
             
             samples = []
             start_time = time.time()
-            timeout = num_samples / 6660 * 2  # 2x expected time as timeout
+            timeout = num_samples / 1660 * 3  # 3x expected time as timeout
             
             # 3. Read samples from FIFO
             while len(samples) < num_samples:
