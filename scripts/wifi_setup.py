@@ -13,8 +13,13 @@ from flask import Flask, render_template_string, request, jsonify
 # Configuration
 HOTSPOT_SSID = "VibraSense-Setup"
 HOTSPOT_PASSWORD = "vibrasense2026"
-CONFIG_FILE = "/home/pi/rpi-edge-client/config/wifi.json"
-SETUP_FLAG = "/home/pi/rpi-edge-client/.wifi_configured"
+CONFIG_FILE = "/home/iltempoprezioso/rpi-edge-client/config/wifi.json"
+SETUP_FLAG = "/home/iltempoprezioso/rpi-edge-client/.wifi_configured"
+
+import logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('wifi_setup')
 
 app = Flask(__name__)
 
@@ -297,168 +302,121 @@ SETUP_PAGE = """
 
 
 class WiFiSetupManager:
-    """Manages WiFi configuration via mobile hotspot."""
-    
+    """Gestisce la configurazione WiFi tramite hotspot, usando NetworkManager (nmcli).
+
+    Differenze rispetto alla versione precedente:
+      - NON esegue piu' 'systemctl stop NetworkManager' (causava l'isolamento del Pi)
+      - NON usa hostapd / dnsmasq / wpa_supplicant / dhcpcd (dhcpcd non esiste su questo sistema)
+      - eth0 continua a funzionare normalmente durante la configurazione del WiFi
+    """
+
+    HOTSPOT_CON = 'vibrasense-setup'
+
     def __init__(self):
         self.config_file = Path(CONFIG_FILE)
         self.setup_flag = Path(SETUP_FLAG)
-    
-    def is_wifi_configured(self) -> bool:
-        """Check if WiFi is already configured."""
-        return self.setup_flag.exists() and self.has_wifi_connection()
-    
-    def has_wifi_connection(self) -> bool:
-        """Check if device has active WiFi connection."""
-        try:
-            result = subprocess.run(
-                ['iwgetid', '-r'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            return result.returncode == 0 and len(result.stdout.strip()) > 0
-        except:
-            return False
-    
-    def create_hotspot(self) -> bool:
-        """Create WiFi hotspot for configuration."""
-        try:
-            print("Creating WiFi hotspot...")
-            
-            # Stop existing networking
-            subprocess.run(['sudo', 'systemctl', 'stop', 'NetworkManager'], check=False)
-            
-            # Configure hostapd
-            hostapd_conf = f"""
-interface=wlan0
-driver=nl80211
-ssid={HOTSPOT_SSID}
-hw_mode=g
-channel=7
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-ignore_broadcast_ssid=0
-wpa=2
-wpa_passphrase={HOTSPOT_PASSWORD}
-wpa_key_mgmt=WPA-PSK
-wpa_pairwise=TKIP
-rsn_pairwise=CCMP
-"""
-            
-            with open('/tmp/hostapd.conf', 'w') as f:
-                f.write(hostapd_conf)
-            
-            # Configure dnsmasq for DHCP
-            dnsmasq_conf = """
-interface=wlan0
-dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
-"""
-            
-            with open('/tmp/dnsmasq.conf', 'w') as f:
-                f.write(dnsmasq_conf)
-            
-            # Configure network interface
-            subprocess.run(['sudo', 'ip', 'addr', 'flush', 'dev', 'wlan0'], check=False)
-            subprocess.run(['sudo', 'ip', 'addr', 'add', '192.168.4.1/24', 'dev', 'wlan0'])
-            subprocess.run(['sudo', 'ip', 'link', 'set', 'wlan0', 'up'])
-            
-            # Start services
-            subprocess.run(['sudo', 'dnsmasq', '-C', '/tmp/dnsmasq.conf'])
-            subprocess.run(['sudo', 'hostapd', '/tmp/hostapd.conf', '-B'])
-            
-            print(f"✓ Hotspot created: {HOTSPOT_SSID}")
-            print(f"  Password: {HOTSPOT_PASSWORD}")
-            print(f"  IP: 192.168.4.1")
-            
-            return True
-            
-        except Exception as e:
-            print(f"Error creating hotspot: {e}")
-            return False
-    
-    def scan_networks(self) -> list:
-        """Scan for available WiFi networks."""
-        try:
-            result = subprocess.run(
-                ['sudo', 'iwlist', 'wlan0', 'scan'],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            
-            networks = []
-            for line in result.stdout.split('\n'):
-                if 'ESSID:' in line:
-                    ssid = line.split('ESSID:"')[1].split('"')[0]
-                    if ssid and ssid not in networks:
-                        networks.append(ssid)
-            
-            return sorted(networks)
-            
-        except Exception as e:
-            print(f"Error scanning networks: {e}")
-            return []
-    
-    def configure_wifi(self, ssid: str, password: str, country: str = 'IT') -> bool:
-        """Configure WiFi connection."""
-        try:
-            print(f"Configuring WiFi: {ssid}")
-            
-            # Save configuration
-            config = {
-                'ssid': ssid,
-                'password': password,
-                'country': country,
-                'configured_at': time.strftime('%Y-%m-%d %H:%M:%S')
-            }
-            
-            self.config_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.config_file, 'w') as f:
-                json.dump(config, f, indent=2)
-            
-            # Create wpa_supplicant configuration
-            wpa_conf = f"""
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-country={country}
 
-network={{
-    ssid="{ssid}"
-    psk="{password}"
-    key_mgmt=WPA-PSK
-}}
-"""
-            
-            with open('/tmp/wpa_supplicant.conf', 'w') as f:
-                f.write(wpa_conf)
-            
-            subprocess.run(['sudo', 'cp', '/tmp/wpa_supplicant.conf', 
-                          '/etc/wpa_supplicant/wpa_supplicant.conf'])
-            
-            # Stop hotspot
-            subprocess.run(['sudo', 'pkill', 'hostapd'], check=False)
-            subprocess.run(['sudo', 'pkill', 'dnsmasq'], check=False)
-            
-            # Restart networking
-            subprocess.run(['sudo', 'systemctl', 'restart', 'dhcpcd'])
-            subprocess.run(['sudo', 'wpa_cli', '-i', 'wlan0', 'reconfigure'], check=False)
-            
-            # Wait for connection
-            time.sleep(5)
-            
-            # Check if connected
-            if self.has_wifi_connection():
-                # Mark as configured
-                self.setup_flag.touch()
-                print("✓ WiFi configured successfully")
-                return True
-            else:
-                print("✗ Failed to connect to WiFi")
-                return False
-                
+    def _nmcli(self, args, timeout=45):
+        """Esegue nmcli e restituisce (ok, output)."""
+        try:
+            r = subprocess.run(['sudo', 'nmcli'] + args,
+                               capture_output=True, text=True, timeout=timeout)
+            return r.returncode == 0, (r.stdout or '') + (r.stderr or '')
         except Exception as e:
-            print(f"Error configuring WiFi: {e}")
+            return False, str(e)
+
+    def is_wifi_configured(self) -> bool:
+        """True se il WiFi e' gia' configurato e connesso."""
+        return self.setup_flag.exists() and self.has_wifi_connection()
+
+    def has_wifi_connection(self) -> bool:
+        """True se wlan0 e' connessa a una rete vera (non all'hotspot di setup)."""
+        ok, out = self._nmcli(['-t', '-f', 'DEVICE,STATE,CONNECTION', 'device', 'status'], timeout=10)
+        if not ok:
+            return False
+        for line in out.splitlines():
+            p = line.split(':')
+            if len(p) >= 3 and p[0] == 'wlan0':
+                return p[1] == 'connected' and p[2] != self.HOTSPOT_CON
+        return False
+
+    def create_hotspot(self) -> bool:
+        """Alza l'hotspot di configurazione su wlan0. Non tocca NetworkManager ne' eth0."""
+        try:
+            self._nmcli(['connection', 'down', self.HOTSPOT_CON], timeout=10)
+            self._nmcli(['connection', 'delete', self.HOTSPOT_CON], timeout=10)
+            ok, out = self._nmcli(['device', 'wifi', 'hotspot', 'ifname', 'wlan0',
+                                   'con-name', self.HOTSPOT_CON, 'ssid', HOTSPOT_SSID,
+                                   'password', HOTSPOT_PASSWORD])
+            if not ok:
+                logger.error("Hotspot non avviato: %s" % out)
+                return False
+            self._nmcli(['connection', 'modify', self.HOTSPOT_CON,
+                         'ipv4.addresses', '192.168.4.1/24'], timeout=10)
+            self._nmcli(['connection', 'up', self.HOTSPOT_CON], timeout=20)
+            logger.info("Hotspot attivo: SSID=%s - http://192.168.4.1:5000" % HOTSPOT_SSID)
+            return True
+        except Exception as e:
+            logger.error("Errore creazione hotspot: %s" % e)
+            return False
+
+    def stop_hotspot(self) -> bool:
+        """Spegne e rimuove l'hotspot di setup."""
+        self._nmcli(['connection', 'down', self.HOTSPOT_CON], timeout=10)
+        self._nmcli(['connection', 'delete', self.HOTSPOT_CON], timeout=10)
+        return True
+
+    def scan_networks(self) -> list:
+        """Elenca le reti WiFi visibili, ordinate per potenza di segnale."""
+        networks = []
+        try:
+            self._nmcli(['device', 'wifi', 'rescan'], timeout=20)
+            ok, out = self._nmcli(['-t', '-f', 'SSID,SIGNAL,SECURITY', 'device', 'wifi', 'list'], timeout=20)
+            if not ok:
+                return []
+            seen = set()
+            for line in out.splitlines():
+                p = line.split(':')
+                if len(p) < 2 or not p[0].strip():
+                    continue
+                ssid = p[0].strip()
+                if ssid in seen:
+                    continue
+                seen.add(ssid)
+                try:
+                    sig = int(p[1])
+                except (ValueError, IndexError):
+                    sig = 0
+                networks.append({'ssid': ssid, 'signal': sig,
+                                 'security': p[2] if len(p) > 2 and p[2] else 'Open'})
+            networks.sort(key=lambda n: n['signal'], reverse=True)
+        except Exception as e:
+            logger.error("Errore scansione reti: %s" % e)
+        return networks
+
+    def configure_wifi(self, ssid: str, password: str, country: str = 'IT') -> bool:
+        """Connette wlan0 alla rete indicata. Se fallisce, riattiva l'hotspot."""
+        try:
+            self.stop_hotspot()
+            time.sleep(2)
+            ok, out = self._nmcli(['device', 'wifi', 'connect', ssid,
+                                   'password', password, 'ifname', 'wlan0'], timeout=60)
+            if not ok:
+                logger.error("Connessione a %s fallita: %s" % (ssid, out))
+                self.create_hotspot()
+                return False
+            time.sleep(3)
+            if not self.has_wifi_connection():
+                logger.error("Connessione a %s non risulta attiva" % ssid)
+                self.create_hotspot()
+                return False
+            self.setup_flag.parent.mkdir(parents=True, exist_ok=True)
+            self.setup_flag.touch()
+            logger.info("Connesso a %s" % ssid)
+            return True
+        except Exception as e:
+            logger.error("Errore configurazione WiFi: %s" % e)
+            self.create_hotspot()
             return False
 
 
