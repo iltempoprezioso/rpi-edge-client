@@ -144,6 +144,25 @@ class HTTPClient:
         cloud_readings = []
         
         for reading in readings_data.get('readings', []):
+            # Formato piatto dal buffer locale (buffer_manager): mappa diretta
+            if 'type' not in reading and 'sensor_type' in reading:
+                _t = reading.get('sensor_type')
+                _v = reading.get('value')
+                if _v is None:
+                    continue
+                _entry = {'sensor_id': reading.get('sensor_id'), 'type': _t}
+                if _t == 'temperature':
+                    _entry['value'] = _v
+                    _entry['unit'] = reading.get('unit') or 'celsius'
+                else:
+                    _entry['value_rms'] = _v
+                    _entry['unit'] = reading.get('unit') or ('mm/s' if _t == 'vibration' else 'ampere')
+                _axis = (reading.get('metadata') or {}).get('axis')
+                if _axis:
+                    _entry['axis'] = _axis
+                cloud_readings.append(_entry)
+                continue
+
             sensor_id = reading.get('sensor_id')
             sensor_type = reading.get('type')
             data = reading.get('data', {})

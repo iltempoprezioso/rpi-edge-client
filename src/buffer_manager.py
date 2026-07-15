@@ -112,7 +112,7 @@ class BufferManager:
                 
                 if sensor_type == 'vibration':
                     # Store RMS for each axis
-                    for axis in ['x', 'y', 'z']:
+                    for axis in ['vel_x', 'vel_y', 'vel_z']:
                         if axis in data:
                             cursor.execute('''
                                 INSERT INTO readings_buffer 
@@ -127,8 +127,8 @@ class BufferManager:
                                 f"{sensor_name} - {axis.upper()}",
                                 sensor_type,
                                 data[axis],
-                                data.get('unit', 'g'),
-                                json.dumps({'axis': axis})
+                                'mm/s',
+                                json.dumps({'axis': axis.split('_')[-1]})
                             ))
                 
                 elif sensor_type == 'temperature':
