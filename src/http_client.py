@@ -212,12 +212,24 @@ class HTTPClient:
             'company_id': readings_data.get('company_id', self.company_id),
             'readings': cloud_readings,
             'device_info': {
-                'device_id': self.device_id
+                'device_id': self.device_id,
+                'cpu_temp': self._get_cpu_temp()
             }
         }
         
         return payload
     
+    def _get_cpu_temp(self):
+        """Temperatura CPU in gradi C, None se non leggibile."""
+        try:
+            with open('/sys/class/thermal/thermal_zone0/temp') as f:
+                t = round(int(f.read().strip()) / 1000.0, 1)
+            if t >= 75.0:
+                logger.warning(f"Temperatura CPU elevata: {t} C (soglia 75 C)")
+            return t
+        except Exception:
+            return None
+
     def disconnect(self):
         """Disconnect (no-op for HTTP)"""
         self.is_connected = False
