@@ -38,6 +38,9 @@ class BufferManager:
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
+            # WAL: resistenza a cadute di corrente + scritture piu' veloci
+            cursor.execute('PRAGMA journal_mode=WAL')
+            cursor.execute('PRAGMA synchronous=NORMAL')
             
             # Create readings buffer table
             cursor.execute('''

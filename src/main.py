@@ -75,11 +75,23 @@ class VibraSenseEdgeClient:
         log_dir.mkdir(parents=True, exist_ok=True)
         
         # Configure logging
+        from logging.handlers import RotatingFileHandler
+        _logcfg = {}
+        try:
+            import json as _json
+            with open(self.config_dir / 'config.json') as _f:
+                _logcfg = _json.load(_f).get('logging', {})
+        except Exception:
+            pass
         logging.basicConfig(
-            level=logging.INFO,
+            level=getattr(logging, _logcfg.get('level', 'INFO'), logging.INFO),
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(log_dir / 'vibrasense.log'),
+                RotatingFileHandler(
+                    log_dir / 'vibrasense.log',
+                    maxBytes=_logcfg.get('max_bytes', 10485760),
+                    backupCount=_logcfg.get('backup_count', 5)
+                ),
                 logging.StreamHandler(sys.stdout)
             ]
         )
