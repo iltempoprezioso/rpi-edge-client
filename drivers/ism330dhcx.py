@@ -112,6 +112,7 @@ class ISM330DHCXDriver(SensorDriver):
         self.gyro_range = config.get('gyro_range', 250)  # ±250 dps default
         self.sampling_rate = config.get('sampling_rate', 104)  # 104 Hz default
         self.enable_gyro = config.get('enable_gyro', True)
+        self.config = config  # serve per burst_rate
         
         self.bus: Optional[smbus2.SMBus] = None
         self.accel_scale = 0.0
@@ -325,24 +326,33 @@ class ISM330DHCXDriver(SensorDriver):
         try:
             
             # 1. Configure accelerometer for 6660 Hz
-            odr_6660 = self.ODR_1660_HZ   # burst @1660 Hz: drenabile senza overflow
+            burst_rate = int(self.config.get('burst_rate', 1660))
+            _odr_burst_map = {833: (self.ODR_833_HZ, 0x07),
+                              1660: (self.ODR_1660_HZ, 0x08),
+                              3330: (self.ODR_3330_HZ, 0x09),
+                              6660: (self.ODR_6660_HZ, 0x0A)}
+            if burst_rate not in _odr_burst_map:
+                logger.warning(f"Sensor {self.sensor_id}: burst_rate {burst_rate} non supportato, uso 1660 Hz")
+                burst_rate = 1660
+            _odr_val, _bdr_val = _odr_burst_map[burst_rate]
+            self.burst_rate = burst_rate
             accel_reg_val, _ = self.accel_range_map[self.accel_range]
-            ctrl1_xl = odr_6660 | (accel_reg_val << 2)
+            ctrl1_xl = _odr_val | (accel_reg_val << 2)
             self.bus.write_byte_data(self.i2c_address, self.REG_CTRL1_XL, ctrl1_xl)
             
-            logger.info(f"Sensor {self.sensor_id}: Starting FIFO burst mode at 1660 Hz for {num_samples} samples")
+            logger.info(f"Sensor {self.sensor_id}: Starting FIFO burst mode at {burst_rate} Hz for {num_samples} samples")
             
             # 2. Configure FIFO: continuous mode, accelerometer only
             self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL1, 0x00)  # Watermark low
             self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL2, 0x00)  # Watermark high
-            self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL3, 0x08)  # BDR accel = 1660 Hz
+            self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL3, _bdr_val)  # BDR accel coerente con ODR
             self.bus.write_byte_data(self.i2c_address, self.REG_FIFO_CTRL4, 0x06)  # Continuous mode
             
             time.sleep(0.01)  # Let FIFO start filling
             
             samples = []
             start_time = time.time()
-            timeout = num_samples / 1660 * 3  # 3x expected time as timeout
+            timeout = num_samples / burst_rate * 3  # 3x expected time as timeout
             
             # 3. Read samples from FIFO
             while len(samples) < num_samples:

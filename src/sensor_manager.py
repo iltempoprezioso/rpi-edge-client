@@ -32,7 +32,20 @@ class SensorManager:
         self.is_running = False
 
         self._load_configuration()
-        self._design_filters(1660.0)
+        self.fft_fs = self._get_fft_rate()
+        self._design_filters(self.fft_fs)
+
+    def _get_fft_rate(self) -> float:
+        """Frequenza del burst vibrazione, letta dal config: fonte unica di verita'."""
+        try:
+            for s in self.sensor_configs:
+                if s.get('type') == 'vibration':
+                    r = s.get('processing', {}).get('fft_sampling_rate')
+                    if r:
+                        return float(r)
+        except Exception:
+            pass
+        return 1660.0
 
     def _load_configuration(self):
         """Load sensor configuration from JSON file."""
@@ -59,15 +72,26 @@ class SensorManager:
     def _design_filters(self, sampling_rate: float):
         """Design digital filters for vibration signal processing."""
         nyquist = sampling_rate / 2.0
+        _f = {}
+        try:
+            for _s in self.sensor_configs:
+                if _s.get('type') == 'vibration':
+                    _f = _s.get('processing', {}).get('filters', {})
+                    break
+        except Exception:
+            pass
+        hp = min(float(_f.get('highpass', 1.0)), nyquist * 0.5)
+        notch = min(float(_f.get('notch', 50.0)), nyquist * 0.9)
+        lp = min(float(_f.get('lowpass', 500.0)), nyquist * 0.9)
 
         # High-pass: remove gravity/DC offset (cutoff 1 Hz)
-        self.hp_b, self.hp_a = scipy_signal.butter(4, 1.0 / nyquist, btype='high')
+        self.hp_b, self.hp_a = scipy_signal.butter(4, hp / nyquist, btype='high')
 
         # Notch: remove 50 Hz power line interference
-        self.notch_b, self.notch_a = scipy_signal.iirnotch(50.0 / nyquist, Q=30)
+        self.notch_b, self.notch_a = scipy_signal.iirnotch(notch / nyquist, Q=30)
 
         # Low-pass: anti-aliasing (cutoff 500 Hz)
-        self.lp_b, self.lp_a = scipy_signal.butter(4, 500.0 / nyquist, btype='low')
+        self.lp_b, self.lp_a = scipy_signal.butter(4, lp / nyquist, btype='low')
 
         self.logger.info(f"Vibration filters designed for {sampling_rate} Hz "
                         f"(HP 1Hz, notch 50Hz, LP 500Hz)")
@@ -275,10 +299,14 @@ class SensorManager:
 
         return result
 
-    def _velocity_rms_mms(self, accel_g, fs: float = 1660.0,
-                          f_lo: float = 10.0, f_hi: float = 800.0) -> float:
+    def _velocity_rms_mms(self, accel_g, fs: float = None,
+                          f_lo: float = 10.0, f_hi: float = None) -> float:
         """Velocita RMS in mm/s: integrazione in frequenza band-limited (ISO 10816)."""
         import numpy as _np
+        if fs is None:
+            fs = getattr(self, 'fft_fs', 1660.0)
+        if f_hi is None:
+            f_hi = min(800.0, fs / 2.1)
         x = _np.asarray(accel_g, dtype=_np.float64) * 9.80665   # g -> m/s^2
         x = x - _np.mean(x)
         N = len(x)
