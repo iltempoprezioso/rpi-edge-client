@@ -340,6 +340,11 @@ class WiFiSetupManager:
                 return p[1] == 'connected' and p[2] != self.HOTSPOT_CON
         return False
 
+    def has_internet(self) -> bool:
+        """True se il dispositivo ha connettivita' da QUALUNQUE interfaccia (eth0 o wlan0)."""
+        ok, out = self._nmcli(['-t', 'networking', 'connectivity', 'check'], timeout=15)
+        return ok and out.strip() == 'full'
+
     def create_hotspot(self) -> bool:
         """Alza l'hotspot di configurazione su wlan0. Non tocca NetworkManager ne' eth0."""
         try:
@@ -476,9 +481,15 @@ def main():
     print("=" * 50)
     
     # Check if already configured
+    if manager.has_internet():
+        print("✓ Dispositivo gia' connesso a internet (cavo o WiFi)")
+        print("  Portale di configurazione non necessario.")
+        print("  Usa --reset per forzare la riconfigurazione.")
+        return
+
     if manager.is_wifi_configured():
-        print("✓ WiFi already configured")
-        print("  Run with --reset to reconfigure")
+        print("✓ WiFi gia' configurato")
+        print("  Usa --reset per riconfigurare")
         return
     
     print("WiFi not configured. Starting setup mode...")
