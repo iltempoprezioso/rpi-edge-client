@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class HTTPClient:
     """HTTP client to send sensor data to cloud worker"""
     
-    def __init__(self, base_url: str, machine_id: int = 1, company_id: int = 1, device_id: str = "rpi-001"):
+    def __init__(self, base_url: str, machine_id: int = 1, company_id: int = 1, device_id: str = "rpi-001", device_token: str = None):
         """
         Initialize HTTP client
         
@@ -27,6 +27,7 @@ class HTTPClient:
             device_id: Unique device identifier
         """
         self.base_url = base_url.rstrip('/')
+        self.device_token = device_token
         self.endpoint = '/api/ingest/readings'
         self.machine_id = machine_id
         self.company_id = company_id
@@ -95,7 +96,7 @@ class HTTPClient:
             response = requests.post(
                 url,
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers=self._auth_headers(),
                 timeout=self.timeout
             )
             
@@ -117,6 +118,13 @@ class HTTPClient:
             logger.error(f"Unexpected error publishing readings: {e}")
             return False
     
+    def _auth_headers(self) -> dict:
+        """Header HTTP, con token del dispositivo se configurato."""
+        h = {"Content-Type": "application/json"}
+        if self.device_token:
+            h["Authorization"] = "Bearer %s" % self.device_token
+        return h
+
     def _convert_to_cloud_format(self, readings_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert sensor_manager format to cloud worker format

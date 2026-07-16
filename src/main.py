@@ -166,7 +166,8 @@ class VibraSenseEdgeClient:
                     base_url=http_url,
                     machine_id=device_config.get('machine_id', 1),
                     company_id=device_config.get('company_id', 1),
-                    device_id=device_config.get('device_id', 'rpi-001')
+                    device_id=device_config.get('device_id', 'rpi-001'),
+                    device_token=transmission_config.get('device_token')
                 )
                 
                 if not self.http_client.connect():
