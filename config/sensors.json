@@ -223,7 +223,9 @@
     "read_interval": 30,
     "burst_interval": 300,
     "burst_mode_enabled": true,
-    "burst_trigger": "timer"
+    "burst_trigger": "timer",
+    "spindle_current_threshold_a": 0.5,
+    "spindle_sensor_id": 5
   },
   "notes": "Production configuration for Raspberry Pi 4 Model B (UnitaPresidioMacchina001). All 6 sensors configured: 2\u00d7ISM330DHCX (0x6A, 0x6B), 2\u00d7MAX6675 (SPI CE0, CE1), 2\u00d7SCT013+ADS1115 (0x48 CH0, CH1)."
 }

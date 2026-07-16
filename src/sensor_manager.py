@@ -248,8 +248,25 @@ class SensorManager:
             'timestamp': timestamp,
             'machine_id': self.machine_id,
             'company_id': self.company_id,
+            'machine_state': self._detect_machine_state(readings),
             'readings': readings
         }
+
+    def _detect_machine_state(self, readings: list) -> str:
+        """Stato macchina dalla corrente del mandrino: running se ruota, idle se fermo.
+
+        Soglia: config/sensors.json -> acquisition.spindle_current_threshold_a
+        """
+        acq = getattr(self, 'acquisition_config', {}) or {}
+        sid = acq.get('spindle_sensor_id', 5)
+        thr = float(acq.get('spindle_current_threshold_a', 0.5))
+        for r in readings:
+            if r.get('sensor_id') == sid and r.get('type') == 'current':
+                i = r.get('data', {}).get('current')
+                if i is None:
+                    return 'unknown'
+                return 'running' if float(i) > thr else 'idle'
+        return 'unknown'
 
     # ------------------------------------------------------------------
     #  Vibration processing
