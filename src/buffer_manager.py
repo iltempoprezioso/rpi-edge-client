@@ -285,6 +285,25 @@ class BufferManager:
             ''', (cutoff_date.isoformat(),))
             
             deleted = cursor.rowcount
+
+            # Tetto massimo: se il buffer supera max_records (rete assente a lungo),
+            # elimina le righe piu' vecchie anche se non trasmesse: meglio perdere
+            # i dati vecchi che riempire la SD e bloccare il dispositivo.
+            cursor.execute('SELECT COUNT(*) FROM readings_buffer')
+            total = cursor.fetchone()[0]
+            if total > self.max_records:
+                excess = total - self.max_records
+                cursor.execute(
+                    'DELETE FROM readings_buffer WHERE id IN '
+                    '(SELECT id FROM readings_buffer ORDER BY id ASC LIMIT ?)',
+                    (excess,)
+                )
+                deleted += excess
+                self.logger.warning(
+                    "Buffer oltre il limite (%d > %d): eliminate %d righe vecchie"
+                    % (total, self.max_records, excess)
+                )
+
             conn.commit()
             conn.close()
             
