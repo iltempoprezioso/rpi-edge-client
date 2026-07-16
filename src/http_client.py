@@ -229,6 +229,7 @@ class HTTPClient:
             'timestamp': timestamp_iso,
             'machine_id': readings_data.get('machine_id', self.machine_id),
             'company_id': readings_data.get('company_id', self.company_id),
+            'machine_state': readings_data.get('machine_state', 'unknown'),
             'readings': cloud_readings,
             'device_info': {
                 'device_id': self.device_id,

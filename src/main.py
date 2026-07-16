@@ -338,6 +338,7 @@ class VibraSenseEdgeClient:
                         'timestamp': reading['timestamp'],
                         'machine_id': reading['machine_id'],
                         'company_id': reading['company_id'],
+                        'machine_state': reading.get('machine_state') or 'unknown',
                         'readings': []
                     }
                 grouped[key]['readings'].append(reading)

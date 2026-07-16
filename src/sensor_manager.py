@@ -264,8 +264,10 @@ class SensorManager:
             if r.get('sensor_id') == sid and r.get('type') == 'current':
                 i = r.get('data', {}).get('current')
                 if i is None:
+                    self.logger.warning("machine_state: sensore %s senza campo current" % sid)
                     return 'unknown'
                 return 'running' if float(i) > thr else 'idle'
+        self.logger.warning("machine_state: sensore mandrino id=%s non trovato tra %s" % (sid, [(r.get('sensor_id'), r.get('type')) for r in readings]))
         return 'unknown'
 
     # ------------------------------------------------------------------

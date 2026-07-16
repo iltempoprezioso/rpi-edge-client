@@ -55,6 +55,7 @@ class BufferManager:
                     value REAL NOT NULL,
                     unit TEXT NOT NULL,
                     metadata TEXT,
+                    machine_state TEXT,
                     transmitted INTEGER DEFAULT 0,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     transmitted_at TEXT
@@ -103,6 +104,7 @@ class BufferManager:
             timestamp = reading_data.get('timestamp')
             machine_id = reading_data.get('machine_id')
             company_id = reading_data.get('company_id')
+            machine_state = reading_data.get('machine_state')
             
             # Insert each sensor reading
             for reading in reading_data.get('readings', []):
@@ -120,8 +122,8 @@ class BufferManager:
                             cursor.execute('''
                                 INSERT INTO readings_buffer 
                                 (timestamp, machine_id, company_id, sensor_id, 
-                                 sensor_name, sensor_type, value, unit, metadata)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 sensor_name, sensor_type, value, unit, metadata, machine_state)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             ''', (
                                 datetime.fromtimestamp(timestamp).isoformat(),
                                 machine_id,
@@ -131,15 +133,16 @@ class BufferManager:
                                 sensor_type,
                                 data[axis],
                                 'mm/s',
-                                json.dumps({'axis': axis.split('_')[-1]})
+                                json.dumps({'axis': axis.split('_')[-1]}),
+                                machine_state
                             ))
                 
                 elif sensor_type == 'temperature':
                     cursor.execute('''
                         INSERT INTO readings_buffer 
                         (timestamp, machine_id, company_id, sensor_id, 
-                         sensor_name, sensor_type, value, unit, metadata)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         sensor_name, sensor_type, value, unit, metadata, machine_state)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         datetime.fromtimestamp(timestamp).isoformat(),
                         machine_id,
@@ -149,15 +152,16 @@ class BufferManager:
                         sensor_type,
                         data.get('temperature', 0),
                         data.get('unit', 'celsius'),
-                        json.dumps({'internal_temp': data.get('internal_temp')})
+                        json.dumps({'internal_temp': data.get('internal_temp')}),
+                        machine_state
                     ))
                 
                 elif sensor_type == 'current':
                     cursor.execute('''
                         INSERT INTO readings_buffer 
                         (timestamp, machine_id, company_id, sensor_id, 
-                         sensor_name, sensor_type, value, unit, metadata)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         sensor_name, sensor_type, value, unit, metadata, machine_state)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         datetime.fromtimestamp(timestamp).isoformat(),
                         machine_id,
@@ -167,7 +171,8 @@ class BufferManager:
                         sensor_type,
                         data.get('current', 0),
                         data.get('unit', 'ampere'),
-                        json.dumps({'voltage': data.get('voltage')})
+                        json.dumps({'voltage': data.get('voltage')}),
+                        machine_state
                     ))
             
             conn.commit()
@@ -248,7 +253,8 @@ class BufferManager:
                     'sensor_type': row['sensor_type'],
                     'value': row['value'],
                     'unit': row['unit'],
-                    'metadata': json.loads(row['metadata']) if row['metadata'] else {}
+                    'metadata': json.loads(row['metadata']) if row['metadata'] else {},
+                    'machine_state': row['machine_state'] if 'machine_state' in row.keys() else None
                 }
                 readings.append(reading)
             
