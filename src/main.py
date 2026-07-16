@@ -264,8 +264,7 @@ class VibraSenseEdgeClient:
                 readings = self.sensor_manager.read_all_sensors()
                 
                 if readings:
-                    # Save to buffer
-                    self.buffer_manager.save_reading(readings)
+                    # NB: il buffer si usa solo se la trasmissione fallisce (vedi sotto)
                     
                     # Try to transmit via configured method
                     transmitted = False
@@ -287,8 +286,13 @@ class VibraSenseEdgeClient:
                     if transmitted:
                         self.logger.info(f"✓ Readings transmitted ({len(readings['readings'])} sensors)")
                     
-                    # Retry untransmitted readings
-                    self._retry_buffered_readings()
+                    if transmitted:
+                        # rete ok: svuota l'eventuale arretrato
+                        self._retry_buffered_readings()
+                    else:
+                        # rete giu': conserva per il prossimo tentativo
+                        self.buffer_manager.save_reading(readings)
+                        self.logger.info('Letture salvate nel buffer locale')
                 
                 # Cleanup old records
                 self.buffer_manager.cleanup_old_records()
