@@ -50,3 +50,17 @@ Thumbs.db
 # Raspberry Pi specific
 *.img
 *.img.gz
+*.bak
+*.bak2
+*.cfgbak
+*.velbak
+*.walbak
+*.bufbak
+*.tempbak
+*.odrbak
+*.conbak
+*.oldbak
+*.logbak
+*.preoffset
+*-backup.json
+test_*.py

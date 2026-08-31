@@ -292,9 +292,10 @@ class MQTTClient:
             self.logger.info(f"✓ Connected to MQTT broker (rc={rc})")
             
             # Subscribe to commands topic
-            commands_topic = self._format_topic(self.topic_commands)
-            client.subscribe(commands_topic, qos=self.qos_commands)
-            self.logger.info(f"Subscribed to {commands_topic}")
+            # DISABLED: commands disabled on public broker
+            # commands_topic = self._format_topic(self.topic_commands)
+            # client.subscribe(commands_topic, qos=self.qos_commands)
+            # self.logger.info(f"Subscribed to {commands_topic}")
         else:
             self.logger.error(f"Connection failed with code {rc}")
             self.is_connected = False

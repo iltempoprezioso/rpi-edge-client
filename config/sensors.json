@@ -155,7 +155,7 @@
         "gain": "4.096V",
         "current_range": 30.0,
         "bias_voltage": 1.628,
-        "calibration_offset": 0.0,
+        "calibration_offset": 0.42,
         "samples_per_read": 100
       },
       "processing": {
@@ -193,7 +193,7 @@
         "gain": "4.096V",
         "current_range": 30.0,
         "bias_voltage": 1.628,
-        "calibration_offset": 0.0,
+        "calibration_offset": 0.42,
         "samples_per_read": 100
       },
       "processing": {
